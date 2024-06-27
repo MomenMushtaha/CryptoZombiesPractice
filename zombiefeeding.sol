@@ -2,10 +2,12 @@ pragma solidity >=0.5.0 <0.6.0;
 
 import "./zombiefactory.sol";
 
-// declare the interface for the CryptoKitties contract
+/// @title Interface for CryptoKitties Contract
+/// @dev This interface allows interaction with the CryptoKitties contract
 contract KittyInterface {
-    // view functions do not cost gas when called externally
-    // this function will allow us to fetch the kitty's data from the CryptoKitties contract
+    /// @notice Get details about a specific CryptoKitty
+    /// @param _id The ID of the CryptoKitty
+    /// @return Various attributes of the CryptoKitty
     function getKitty(uint256 _id) external view returns (
         bool isGestating,
         bool isReady,
@@ -20,49 +22,49 @@ contract KittyInterface {
     );
 }
 
-// ZombieFeeding inherits from ZombieFactory
+/// @title ZombieFeeding Contract
+/// @dev This contract allows zombies to feed on CryptoKitties and other zombies to multiply
 contract ZombieFeeding is ZombieFactory {
-    // declare the KittyInterface contract to interact with the CryptoKitties contract
     KittyInterface kittyContract;
 
-    // modify the cooldown time to 1 day
-    // notice the syntax for the modifier declaration
+    /// @dev Modifier to check if the caller is the owner of the zombie
+    /// @param _zombieId The ID of the zombie
     modifier onlyOwnerOf(uint _zombieId) {
-        // require that the caller of the function is the owner of the zombie
         require(msg.sender == zombieToOwner[_zombieId]);
         _;
     }
 
-    // function to set the address of the CryptoKitties contract
-    // when a variable is declared as `address`, it is assumed to be an Ethereum address
-    // when a variable is declared with a '_' prefix, it is assumed to be a function argument
+    /// @notice Set the address of the CryptoKitties contract
+    /// @param _address The address of the CryptoKitties contract
+    /// @dev Only the owner of the contract can set the address
     function setKittyContractAddress(address _address) external onlyOwner {
         kittyContract = KittyInterface(_address);
     }
 
-    // function to trigger the cooldown for a zombie
+    /// @dev Internal function to trigger the cooldown period for a zombie
+    /// @param _zombie The zombie to trigger the cooldown for
     function _triggerCooldown(Zombie storage _zombie) internal {
         _zombie.readyTime = uint32(now + cooldownTime);
     }
 
-    // function to check if a zombie is ready
+    /// @dev Internal view function to check if a zombie is ready for action
+    /// @param _zombie The zombie to check
+    /// @return True if the zombie is ready, false otherwise
     function _isReady(Zombie storage _zombie) internal view returns (bool) {
         return (_zombie.readyTime <= now);
     }
 
-    // function to feed and multiply a zombie with a target dna and species
-    // only the owner of the zombie can call this function as specified by the onlyOwnerOf modifier
-    // the memory keyword is used to store the data in memory
+    /// @notice Feed and multiply a zombie with a target DNA and species
+    /// @param _zombieId The ID of the zombie
+    /// @param _targetDna The DNA of the target
+    /// @param _species The species of the target
+    /// @dev Only the owner of the zombie can call this function
     function feedAndMultiply(uint _zombieId, uint _targetDna, string memory _species) internal onlyOwnerOf(_zombieId) {
-        // the storage is used by default when declaring a state variable. it is very computationally expensive because
-        //it writes to the Ethereum blockchain every time it is used which means it will pass through thousands of nodes
-        //in the network and will be stored in the blockchain forever
         Zombie storage myZombie = zombies[_zombieId];
         require(_isReady(myZombie));
         _targetDna = _targetDna % dnaModulus;
         uint newDna = (myZombie.dna + _targetDna) / 2;
         // if the species is a kitty, the last two digits of the new dna will be 99
-        // this is to differentiate between zombies and kitties, this is a simple way to add a new feature to the game
         if (keccak256(abi.encodePacked(_species)) == keccak256(abi.encodePacked("kitty"))) {
             newDna = newDna - newDna % 100 + 99;
         }
@@ -70,6 +72,9 @@ contract ZombieFeeding is ZombieFactory {
         _triggerCooldown(myZombie);
     }
 
+    /// @notice Feed a zombie on a CryptoKitty
+    /// @param _zombieId The ID of the zombie
+    /// @param _kittyId The ID of the CryptoKitty
     function feedOnKitty(uint _zombieId, uint _kittyId) public {
         uint kittyDna;
         // to receive a specific value from a set of values, you can use the following syntax
