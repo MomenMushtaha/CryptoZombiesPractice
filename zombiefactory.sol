@@ -77,7 +77,8 @@ contract ZombieFactory is Ownable {
         // Require statements are used to validate inputs
         require(ownerZombieCount[msg.sender] == 0, "Each player can only have one zombie");
         uint randDna = _generateRandomDna(_name);
-        randDna = randDna - randDna % 100; // Ensure the last two digits are zero
+        // Ensure the last two digits are zero
+        randDna = randDna - randDna % 100;
         _createZombie(_name, randDna);
     }
 
